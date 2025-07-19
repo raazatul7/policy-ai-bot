@@ -26,6 +26,48 @@ echo "API_KEY=your_perplexity_api_key_here" > .env
 **📋 Prerequisites:** Python 3.8+, Perplexity API key
 **🔑 Get API Key:** [Perplexity AI](https://www.perplexity.ai/)
 
+## 🚀 **Deploy to Production**
+
+### **Quick Deploy to Netlify**
+
+#### **Step 1: Deploy Backend**
+1. Go to [render.com](https://render.com) and sign up
+2. Click "New +" → "Web Service"
+3. Connect your GitHub repository
+4. Configure:
+   - **Name**: `policy-ai-backend`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `cd backend && python3 main.py`
+   - **Environment Variables**:
+     - `PERPLEXITY_API_KEY=your_key`
+     - `API_KEY=your_key`
+5. Click "Create Web Service"
+6. Copy the URL (e.g., `https://your-app.onrender.com`)
+
+#### **Step 2: Deploy Frontend**
+1. Go to [netlify.com](https://netlify.com)
+2. Drag your `frontend` folder to the deploy area
+3. Your site is live! 🎉
+
+#### **Step 3: Connect Frontend to Backend**
+Update `frontend/index.html` with your backend URL:
+```javascript
+const API_BASE_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:8000' 
+    : 'https://your-backend-url.onrender.com'; // Replace with your actual URL
+```
+
+#### **Quick Deploy Commands**
+```bash
+# Push to GitHub
+./deploy.sh
+
+# Or manually:
+git add .
+git commit -m "Deploy to production"
+git push origin main
+```
+
 ## 📁 **Optimized Project Structure**
 
 ```
