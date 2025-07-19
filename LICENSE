@@ -1,0 +1,66 @@
+MIT License
+
+Copyright (c) 2025 Atul Raj Gupta
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Additional Terms and Conditions
+
+### API Usage
+This software integrates with third-party APIs including but not limited to:
+- Perplexity AI API
+- OpenAI API (optional)
+
+Users are responsible for:
+- Obtaining their own API keys from respective providers
+- Complying with the terms of service of these third-party APIs
+- Managing their own API usage limits and costs
+
+### Data Privacy
+- This software processes insurance policy documents and user queries
+- Users are responsible for ensuring they have proper authorization to process any documents
+- The software does not store or transmit user data to unauthorized third parties
+- Users should review and comply with applicable data protection regulations
+
+### Disclaimer
+This software is provided for educational and research purposes. Users should:
+- Verify the accuracy of AI-generated responses independently
+- Not rely solely on this software for critical insurance decisions
+- Consult with qualified professionals for important policy matters
+- Test thoroughly in their specific use case before production deployment
+
+### Contributing
+Contributions are welcome! Please:
+- Fork the repository
+- Create a feature branch
+- Make your changes
+- Add tests for new functionality
+- Submit a pull request
+
+### Support
+For support, questions, or issues:
+- Check the README.md file for documentation
+- Review the test suite for usage examples
+- Open an issue on the project repository
+
+---
+
+**Note:** This license applies to the Policy AI Bot software. Third-party libraries and dependencies may have their own licenses that should be reviewed separately. 

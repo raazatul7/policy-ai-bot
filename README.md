@@ -27,6 +27,7 @@ echo "API_KEY=your_perplexity_api_key_here" > .env
 
 **📋 Prerequisites:** Python 3.8+, Perplexity API key
 **🔑 Get API Key:** [Perplexity AI](https://www.perplexity.ai/)
+**📄 License:** [MIT License](LICENSE)
 
 ## 📁 **Optimized Project Structure**
 
