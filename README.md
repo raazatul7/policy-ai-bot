@@ -1,5 +1,7 @@
 # 🤖 AI Policy Query System
 
+![Policy AI Bot](assets/policy-ai-bot.png)
+
 An intelligent system for analyzing insurance policy documents and answering natural language questions using AI.
 
 ## ⚡ **Quick Start (TL;DR)**
@@ -28,48 +30,32 @@ echo "API_KEY=your_perplexity_api_key_here" > .env
 
 ## 📁 **Optimized Project Structure**
 
+This project has been cleaned up to remove unnecessary empty folders and focus on essential functionality.
+
 ```
 policy-ai-bot/
 ├── 📁 backend/                    # FastAPI backend
-│   ├── 📁 api/                   # API routes and endpoints
 │   ├── 📁 core/                  # Core business logic
 │   │   ├── document_parser.py    # Document parsing
 │   │   ├── embedder.py          # Embedding generation
 │   │   ├── retriever.py         # Document retrieval
 │   │   └── llm_reasoner.py      # AI reasoning
-│   ├── 📁 services/             # Business services
-│   ├── 📁 utils/                # Utility functions
-│   ├── 📁 models/               # Data models
 │   └── main.py                  # FastAPI application
 ├── 📁 frontend/                 # Web frontend
-│   ├── 📁 assets/              # Static assets
-│   │   ├── css/                # Stylesheets
-│   │   ├── js/                 # JavaScript
-│   │   └── images/             # Images
-│   ├── 📁 components/          # React components
-│   ├── 📁 pages/               # Page components
-│   └── index.html              # Main HTML file
-├── 📁 tests/                   # Test suite
-│   ├── 📁 unit/               # Unit tests
-│   ├── 📁 integration/        # Integration tests
-│   ├── 📁 e2e/                # End-to-end tests
-│   └── run_all_tests.py       # Test runner
-├── 📁 docs/                   # Documentation
-│   ├── 📁 api/                # API documentation
-│   ├── 📁 user/               # User guides
-│   └── 📁 deployment/         # Deployment guides
-├── 📁 scripts/                # Utility scripts
-│   ├── 📁 setup/              # Setup scripts
-│   ├── 📁 deployment/         # Deployment scripts
-│   └── 📁 maintenance/        # Maintenance scripts
+│   └── index.html              # Main HTML file (all CSS/JS embedded)
 ├── 📁 config/                 # Configuration
 │   └── settings.py            # App settings
 ├── 📁 data/                   # Data storage
 ├── 📁 logs/                   # Application logs
-├── app.py                     # Main entry point
 ├── requirements.txt            # Python dependencies
 └── README.md                  # This file
 ```
+
+**🎯 Clean Architecture Benefits:**
+- **No Empty Folders**: Removed unused placeholder directories
+- **Focused Structure**: Only essential components remain
+- **Easy Navigation**: Clear, simple folder hierarchy
+- **Single-Page Frontend**: All UI code in one file for simplicity
 
 ## 🧪 **Testing the System**
 
@@ -304,7 +290,7 @@ curl http://localhost:8000/health
 #### **Run All Tests**
 ```bash
 # Run comprehensive test suite
-python3 tests/run_all_tests.py
+python3 run_tests.py
 ```
 
 ### **6. 📱 Start the Frontend (Optional)**
@@ -467,7 +453,7 @@ curl http://localhost:8000/health
 tail -f logs/app.log
 
 # Run tests
-python3 tests/run_all_tests.py
+python3 run_tests.py
 
 # Check API key
 python3 -c "import os; from dotenv import load_dotenv; load_dotenv(); print('API_KEY:', '✅ Found' if os.getenv('API_KEY') else '❌ Not found')"
@@ -524,7 +510,7 @@ curl http://localhost:3000
 - [ ] Server starts without errors
 - [ ] Health endpoint returns `{"status":"healthy"}`
 - [ ] API documentation loads at `/docs`
-- [ ] All tests pass: `python3 tests/run_all_tests.py`
+- [ ] All tests pass: `python3 run_tests.py`
 - [ ] Can upload and query documents
 
 ### **🎯 Next Steps**
@@ -570,30 +556,26 @@ python3 -c "import psutil; m = psutil.virtual_memory(); print(f'Available: {m.av
 ### **Run All Tests**
 ```bash
 # Using the test runner
-python3 tests/run_all_tests.py
+python3 run_tests.py
 
-# Using the shell script
-./tests/run_tests.sh
+# Or run directly
+./run_tests.py
 ```
 
 ### **Run Specific Test Categories**
 ```bash
-# Unit tests
-python3 -m pytest tests/unit/
+# Run all tests
+python3 run_tests.py
 
-# Integration tests
-python3 -m pytest tests/integration/
-
-# End-to-end tests
-python3 -m pytest tests/e2e/
+# Or run the test script directly
+./run_tests.py
 ```
 
 ## 📚 **Documentation**
 
-- **User Guide**: `docs/user/USER_GUIDE.md`
-- **API Documentation**: `docs/api/`
-- **Deployment Guide**: `docs/deployment/`
-- **Test Runner Guide**: `docs/user/TEST_RUNNER_README.md`
+- **API Documentation**: Available at http://localhost:8000/docs when server is running
+- **Frontend Guide**: See `frontend/README.md` for frontend details
+- **Configuration**: See `config/settings.py` for all settings
 
 ## 🔧 **Configuration**
 
@@ -622,16 +604,16 @@ All settings are centralized in `config/settings.py`:
 
 ### **Project Structure Benefits**
 - **Modular Design**: Core components are separated and reusable
-- **Test Organization**: Tests are categorized by type and scope
+- **Simple Structure**: Clean, focused organization without unnecessary folders
 - **Configuration Management**: Centralized settings for easy maintenance
-- **Documentation**: Comprehensive guides for users and developers
-- **Scripts**: Automated setup, deployment, and maintenance tasks
+- **Single-Page Frontend**: All UI code in one HTML file for simplicity
+- **Core-Focused**: All business logic in `backend/core/` for easy understanding
 
 ### **Adding New Features**
 1. **Core Logic**: Add to `backend/core/`
-2. **API Routes**: Add to `backend/api/`
-3. **Tests**: Add to appropriate `tests/` subdirectory
-4. **Documentation**: Update relevant `docs/` files
+2. **API Routes**: Add to `backend/main.py` or create new modules
+3. **Tests**: Add to `run_tests.py` or create test files
+4. **Documentation**: Update this README or create new docs
 
 ## 🔒 **Security**
 
