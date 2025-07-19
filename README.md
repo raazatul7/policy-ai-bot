@@ -18,7 +18,7 @@ pip install -r requirements.txt
 echo "API_KEY=your_perplexity_api_key_here" > .env
 
 # 3. Start All Services
-./start_simple.sh start
+./start.sh start
 
 # 4. Access
 # 🌐 Frontend: http://localhost:3000
@@ -48,6 +48,10 @@ policy-ai-bot/
 │   └── settings.py            # App settings
 ├── 📁 data/                   # Data storage
 ├── 📁 logs/                   # Application logs
+├── start.sh                   # Main startup script
+├── tests.sh                   # Test runner script
+├── logs.sh                    # Log viewer script
+├── run_tests.py               # Python test runner
 ├── requirements.txt            # Python dependencies
 └── README.md                  # This file
 ```
@@ -57,6 +61,12 @@ policy-ai-bot/
 - **Focused Structure**: Only essential components remain
 - **Easy Navigation**: Clear, simple folder hierarchy
 - **Single-Page Frontend**: All UI code in one file for simplicity
+
+**📁 Available Scripts:**
+- **`start.sh`**: Start/stop/restart all services
+- **`tests.sh`**: Run comprehensive test suite
+- **`logs.sh`**: View live server logs
+- **`run_tests.py`**: Direct Python test runner
 
 ## 🧪 **Testing the System**
 
@@ -77,17 +87,17 @@ The system includes a comprehensive test suite that covers all major functionali
 #### **Running Tests:**
 ```bash
 # Run all tests (recommended)
-./run_tests.sh
+./tests.sh
 
 # Or run Python test directly
 python3 run_tests.py
 
 # Run specific test categories
-./run_tests.sh api          # Test Perplexity API only
-./run_tests.sh parser       # Test document parser only
-./run_tests.sh embedding    # Test embedding system only
-./run_tests.sh integration  # Test system integration only
-./run_tests.sh quick        # Quick health check
+./tests.sh api          # Test Perplexity API only
+./tests.sh parser       # Test document parser only
+./tests.sh embedding    # Test embedding system only
+./tests.sh integration  # Test system integration only
+./tests.sh quick        # Quick health check
 
 # With virtual environment
 source venv/bin/activate && python3 run_tests.py
@@ -115,26 +125,26 @@ source venv/bin/activate && python3 run_tests.py
 - **API Key Issues**: Ensure `PERPLEXITY_API_KEY` is set in `.env`
 - **Missing Dependencies**: Run `pip install -r requirements.txt`
 - **Virtual Environment**: Activate with `source venv/bin/activate`
-- **Server Tests**: Start server first with `./start_simple.sh start`
+- **Server Tests**: Start server first with `./start.sh start`
 
 ### **📊 Monitoring and Logs**
 
 #### **Live Log Viewing:**
 ```bash
 # View backend logs
-./view_logs.sh backend
+./logs.sh backend
 
 # View frontend logs
-./view_logs.sh frontend
+./logs.sh frontend
 
 # View both logs simultaneously
-./view_logs.sh both
+./logs.sh both
 
 # View only error messages
-./view_logs.sh errors
+./logs.sh errors
 
 # Show log file information
-./view_logs.sh info
+./logs.sh info
 ```
 
 #### **Direct Log Commands:**
@@ -225,34 +235,23 @@ PORT=8000
 #### **Option 1: Complete System Startup (Recommended)**
 ```bash
 # Start both frontend and backend servers
-./start_simple.sh start
-
-# Or with separate terminals (macOS)
-./start_all.sh start
+./start.sh start
 ```
 
 #### **Option 2: Backend Only**
 ```bash
-# Make script executable (first time only)
-chmod +x scripts/start_server.sh
-
-# Start the backend server
-./scripts/start_server.sh
+# Start the backend server directly
+cd backend && python3 main.py
 ```
 
-#### **Option 3: Direct Python Execution**
-```bash
-# Start the server directly
-python3 app.py
-```
-
-#### **Option 4: Manual Server Start**
+#### **Option 3: Manual Server Start**
 ```bash
 # Activate virtual environment (if not already active)
 source venv/bin/activate
 
-# Start with uvicorn
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+# Start with uvicorn (from backend directory)
+cd backend && uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
 ```
 
 ### **4. 🌐 Access the System**
@@ -298,11 +297,8 @@ python3 run_tests.py
 
 #### **Serve Frontend**
 ```bash
-# Start the frontend server
-./scripts/start_frontend.sh
-
-# Or manually
-python3 scripts/serve_frontend.py
+# Start the frontend server manually
+cd frontend && python3 -m http.server 3000
 ```
 
 #### **Access Frontend**
@@ -320,7 +316,7 @@ lsof -ti:8000 | xargs kill -9
 
 # Or use a different port
 export PORT=8001
-python3 app.py
+cd backend && python3 main.py
 ```
 
 **Import Errors:**
@@ -407,12 +403,12 @@ python3 -c "import shutil; d = shutil.disk_usage('.'); print(f'Disk: {d.free/102
 
 ```bash
 # Stop all services (if using startup scripts)
-./start_simple.sh stop
+./start.sh stop
 
 # If running in foreground: Ctrl+C
 
 # If running in background:
-ps aux | grep "python3 app.py" | grep -v grep | awk '{print $2}' | xargs kill
+ps aux | grep "python3 main.py" | grep -v grep | awk '{print $2}' | xargs kill
 
 # Or kill by port:
 lsof -ti:8000 | xargs kill -9
@@ -422,20 +418,20 @@ lsof -ti:8000 | xargs kill -9
 
 ```bash
 # Restart all services (if using startup scripts)
-./start_simple.sh restart
+./start.sh restart
 
 # Stop and restart backend only
-pkill -f "python3 app.py" && sleep 2 && ./scripts/start_server.sh
+pkill -f "python3 main.py" && sleep 2 && cd backend && python3 main.py
 
 # Or with different port
-export PORT=8001 && python3 app.py
+export PORT=8001 && cd backend && python3 main.py
 ```
 
 ### **📊 Check System Status**
 
 ```bash
 # Check status of all services
-./start_simple.sh status
+./start.sh status
 
 # Check backend health
 curl http://localhost:8000/health
@@ -495,7 +491,7 @@ python3 -c "import os; from dotenv import load_dotenv; load_dotenv(); print('API
 
 # 6. Start All Services
 chmod +x *.sh
-./start_simple.sh start
+./start.sh start
 
 # 7. Verify Services
 curl http://localhost:8000/health
@@ -518,7 +514,7 @@ curl http://localhost:3000
 1. **Upload a document** via `/upload` endpoint
 2. **Ask questions** via `/ask` or `/ask-existing` endpoints
 3. **Explore API docs** at http://localhost:8000/docs
-4. **Start frontend** with `./scripts/start_frontend.sh`
+4. **Start frontend** with `cd frontend && python3 -m http.server 3000`
 
 ### **🔧 Quick Troubleshooting**
 
