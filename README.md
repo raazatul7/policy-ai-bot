@@ -6,7 +6,7 @@ An intelligent system for analyzing insurance policy documents and answering nat
 
 ```bash
 # 1. Setup
-git clone [<repository-url>](https://github.com/raazatul7/policy-ai-bot.git)
+git clone https://github.com/raazatul7/policy-ai-bot.git
 cd policy-ai-bot
 python3 -m venv venv
 source venv/bin/activate
