@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Policy Query System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-input:hover {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+
+        .file-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .query-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .query-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+        }
+
+        .result h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .result-section {
+            margin-bottom: 15px;
+        }
+
+        .result-section h4 {
+            color: #667eea;
+            margin-bottom: 5px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .result-section p {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .error {
+            background: #ffe6e6;
+            border-left-color: #ff4444;
+            color: #cc0000;
+        }
+
+        .success {
+            background: #e6ffe6;
+            border-left-color: #44ff44;
+        }
+
+        .documents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .document-card {
+            background: white;
+            border: 2px solid #eee;
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .document-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.1);
+        }
+
+        .document-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .document-info {
+            margin-bottom: 15px;
+        }
+
+        .document-info p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-uploaded {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-processed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .document-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .status.connected {
+            background: #e6ffe6;
+            color: #006600;
+        }
+
+        .status.disconnected {
+            background: #ffe6e6;
+            color: #cc0000;
+        }
+
+        .example-questions {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0f2ff;
+            border-radius: 10px;
+        }
+
+        .example-questions h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .question-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .example-question {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .example-question:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .empty-state p {
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                text-align: left;
+                border-bottom: 1px solid #eee;
+            }
+
+            .documents-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 AI Policy Query System</h1>
+            <p>Upload your insurance policy and ask questions in natural language</p>
+            <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 10px;">Powered by Perplexity Sonar-pro</p>
+        </div>
+
+        <div class="main-content">
+            <div class="status" id="status">
+                Checking connection...
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('upload')">📄 Upload & Ask</button>
+                <button class="tab" onclick="showTab('documents')">📁 My Documents</button>
+                <button class="tab" onclick="showTab('ask-existing')">❓ Ask Existing</button>
+            </div>
+
+            <!-- Upload & Ask Tab -->
+            <div id="upload-tab" class="tab-content active">
+                <div class="upload-section">
+                    <div class="form-group">
+                        <label for="document">📄 Upload Policy Document</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="document" class="file-input" accept=".pdf,.docx,.txt" required>
+                        </div>
+                        <small style="color: #666; margin-top: 5px; display: block;">
+                            Supported formats: PDF, DOCX, TXT (Max 100MB)
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="query">❓ Ask Your Question</label>
+                        <textarea id="query" class="query-input" rows="3" placeholder="e.g., Is maternity coverage included? What is the annual deductible? Are prescription drugs covered?" required></textarea>
+                    </div>
+
+                    <button id="submitBtn" class="btn btn-primary" onclick="askQuestion()">
+                        🤖 Ask AI
+                    </button>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing your question...</p>
+                </div>
+
+                <div class="result" id="result" style="display: none;"></div>
+
+                <div class="example-questions">
+                    <h3>💡 Example Questions</h3>
+                    <div class="question-examples">
+                        <div class="example-question" onclick="setExample('Is maternity coverage included?')">
+                            Is maternity coverage included?
+                        </div>
+                        <div class="example-question" onclick="setExample('What is the annual deductible?')">
+                            What is the annual deductible?
+                        </div>
+                        <div class="example-question" onclick="setExample('Are prescription drugs covered?')">
+                            Are prescription drugs covered?
+                        </div>
+                        <div class="example-question" onclick="setExample('What is the waiting period for pre-existing conditions?')">
+                            What is the waiting period for pre-existing conditions?
+                        </div>
+                        <div class="example-question" onclick="setExample('How much does emergency room cost?')">
+                            How much does emergency room cost?
+                        </div>
+                        <div class="example-question" onclick="setExample('What dental services are covered?')">
+                            What dental services are covered?
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents Tab -->
+            <div id="documents-tab" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>📁 My Documents</h2>
+                    <button class="btn btn-primary" onclick="showTab('upload')">📄 Upload New</button>
+                </div>
+
+                <div id="documents-container">
+                    <div class="loading" id="documents-loading">
+                        <div class="spinner"></div>
+                        <p>Loading documents...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ask Existing Tab -->
+            <div id="ask-existing-tab" class="tab-content">
+                <div class="form-group">
+                    <label for="existing-query">❓ Ask Question About Processed Document</label>
+                    <textarea id="existing-query" class="query-input" rows="3" placeholder="Ask a question about the currently processed document..." required></textarea>
+                </div>
+
+                <button id="askExistingBtn" class="btn btn-primary" onclick="askExistingQuestion()">
+                    🤖 Ask AI
+                </button>
+
+                <div class="loading" id="existing-loading">
+                    <div class="spinner"></div>
+                    <p>Processing your question...</p>
+                </div>
+
+                <div class="result" id="existing-result" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        let currentDocumentId = null;
+
+        // Tab management
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+
+            // Load documents if documents tab
+            if (tabName === 'documents') {
+                loadDocuments();
+            }
+        }
+
+        // Check connection status
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (response.ok) {
+                    document.getElementById('status').innerHTML = '✅ Connected to AI Policy Query System';
+                    document.getElementById('status').className = 'status connected';
+                } else {
+                    throw new Error('Server not responding');
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML = '❌ Cannot connect to server. Make sure the server is running on localhost:8000';
+                document.getElementById('status').className = 'status disconnected';
+            }
+        }
+
+        // Load documents
+        async function loadDocuments() {
+            const container = document.getElementById('documents-container');
+            const loading = document.getElementById('documents-loading');
+            
+            loading.style.display = 'block';
+            container.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/documents`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.documents.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>📁 No Documents Yet</h3>
+                            <p>Upload your first policy document to get started!</p>
+                            <button class="btn btn-primary" onclick="showTab('upload')">📄 Upload Document</button>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = data.documents.map(doc => `
+                        <div class="document-card">
+                            <h3>${doc.original_filename}</h3>
+                            <div class="document-info">
+                                <p><strong>Type:</strong> ${doc.file_type}</p>
+                                <p><strong>Size:</strong> ${formatFileSize(doc.file_size)}</p>
+                                <p><strong>Uploaded:</strong> ${formatDate(doc.upload_date)}</p>
+                                <p><strong>Status:</strong> 
+                                    <span class="status-badge status-${doc.status}">${doc.status}</span>
+                                </p>
+                                ${doc.chunks ? `<p><strong>Chunks:</strong> ${doc.chunks}</p>` : ''}
+                            </div>
+                            <div class="document-actions">
+                                ${doc.status === 'uploaded' ? 
+                                    `<button class="btn btn-success" onclick="processDocument('${doc.id}')">⚙️ Process</button>` : 
+                                    `<button class="btn btn-primary" onclick="askAboutDocument('${doc.id}')">❓ Ask Question</button>`
+                                }
+                                <button class="btn btn-danger" onclick="deleteDocument('${doc.id}')">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Error Loading Documents</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Process document
+        async function processDocument(documentId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/process/${documentId}`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                showSuccess(`Document processed successfully! ${result.document_info.chunks} chunks created.`);
+                loadDocuments(); // Refresh the list
+            } catch (error) {
+                showError(`Error processing document: ${error.message}`);
+            }
+        }
+
+        // Delete document
+        async function deleteDocument(documentId) {
+            if (!confirm('Are you sure you want to delete this document?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/documents/${documentId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                showSuccess('Document deleted successfully!');
+                loadDocuments(); // Refresh the list
+            } catch (error) {
+                showError(`Error deleting document: ${error.message}`);
+            }
+        }
+
+        // Ask about specific document
+        function askAboutDocument(documentId) {
+            currentDocumentId = documentId;
+            showTab('ask-existing');
+        }
+
+        // Set example question
+        function setExample(question) {
+            const activeTab = document.querySelector('.tab-content.active');
+            const queryInput = activeTab.querySelector('.query-input');
+            if (queryInput) {
+                queryInput.value = question;
+            }
+        }
+
+        // Ask question to the AI
+        async function askQuestion() {
+            const documentFile = document.getElementById('document').files[0];
+            const query = document.getElementById('query').value.trim();
+
+            // Validate inputs
+            if (!documentFile) {
+                showError('Please select a policy document to upload.');
+                return;
+            }
+
+            if (!query) {
+                showError('Please enter a question about your policy.');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('submitBtn').disabled = true;
+
+            try {
+                // Create form data
+                const formData = new FormData();
+                formData.append('document', documentFile);
+                formData.append('query', query);
+
+                // Make API request
+                const response = await fetch(`${API_BASE_URL}/ask`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                showResult(result);
+                currentDocumentId = result.document_id;
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Error: ${error.message}. Please make sure the server is running and try again.`);
+            } finally {
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+            }
+        }
+
+        // Ask existing document question
+        async function askExistingQuestion() {
+            const query = document.getElementById('existing-query').value.trim();
+
+            if (!query) {
+                showError('Please enter a question.');
+                return;
+            }
+
+            if (!currentDocumentId) {
+                showError('No document is currently processed. Please upload and process a document first.');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('existing-loading').style.display = 'block';
+            document.getElementById('existing-result').style.display = 'none';
+            document.getElementById('askExistingBtn').disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('query', query);
+
+                const response = await fetch(`${API_BASE_URL}/ask-existing`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                showExistingResult(result);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showExistingError(`Error: ${error.message}`);
+            } finally {
+                // Hide loading
+                document.getElementById('existing-loading').style.display = 'none';
+                document.getElementById('askExistingBtn').disabled = false;
+            }
+        }
+
+        // Show result
+        function showResult(data) {
+            const resultDiv = document.getElementById('result');
+            
+            let html = `
+                <h3>🤖 AI Response</h3>
+                <div class="result-section">
+                    <h4>📋 Your Question</h4>
+                    <p>${data.query || 'N/A'}</p>
+                </div>
+                <div class="result-section">
+                    <h4>✅ Decision</h4>
+                    <p>${data.decision || 'N/A'}</p>
+                </div>
+                <div class="result-section">
+                    <h4>📖 Justification</h4>
+                    <p>${data.justification || 'N/A'}</p>
+                </div>
+                <div class="result-section">
+                    <h4>🔍 Reference</h4>
+                    <p>${data.reference || 'N/A'}</p>
+                </div>
+            `;
+
+            if (data.document_info) {
+                html += `
+                    <div class="result-section">
+                        <h4>📄 Document Info</h4>
+                        <p>File: ${data.document_info.filename || 'N/A'}</p>
+                        <p>Type: ${data.document_info.file_type || 'N/A'}</p>
+                        <p>Processed chunks: ${data.document_info.processed_chunks || 'N/A'}</p>
+                        <p>Document ID: ${data.document_info.document_id || 'N/A'}</p>
+                    </div>
+                `;
+            }
+
+            resultDiv.innerHTML = html;
+            resultDiv.className = 'result success';
+            resultDiv.style.display = 'block';
+        }
+
+        // Show existing result
+        function showExistingResult(data) {
+            const resultDiv = document.getElementById('existing-result');
+            
+            let html = `
+                <h3>🤖 AI Response</h3>
+                <div class="result-section">
+                    <h4>📋 Your Question</h4>
+                    <p>${data.query || 'N/A'}</p>
+                </div>
+                <div class="result-section">
+                    <h4>✅ Decision</h4>
+                    <p>${data.decision || 'N/A'}</p>
+                </div>
+                <div class="result-section">
+                    <h4>📖 Justification</h4>
+                    <p>${data.justification || 'N/A'}</p>
+                </div>
+                <div class="result-section">
+                    <h4>🔍 Reference</h4>
+                    <p>${data.reference || 'N/A'}</p>
+                </div>
+            `;
+
+            if (data.document_info) {
+                html += `
+                    <div class="result-section">
+                        <h4>📄 Document Info</h4>
+                        <p>File: ${data.document_info.filename || 'N/A'}</p>
+                        <p>Type: ${data.document_info.file_type || 'N/A'}</p>
+                        <p>Processed chunks: ${data.document_info.processed_chunks || 'N/A'}</p>
+                    </div>
+                `;
+            }
+
+            resultDiv.innerHTML = html;
+            resultDiv.className = 'result success';
+            resultDiv.style.display = 'block';
+        }
+
+        // Show error
+        function showError(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <h3>❌ Error</h3>
+                <p>${message}</p>
+            `;
+            resultDiv.className = 'result error';
+            resultDiv.style.display = 'block';
+        }
+
+        // Show existing error
+        function showExistingError(message) {
+            const resultDiv = document.getElementById('existing-result');
+            resultDiv.innerHTML = `
+                <h3>❌ Error</h3>
+                <p>${message}</p>
+            `;
+            resultDiv.className = 'result error';
+            resultDiv.style.display = 'block';
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <h3>✅ Success</h3>
+                <p>${message}</p>
+            `;
+            resultDiv.className = 'result success';
+            resultDiv.style.display = 'block';
+        }
+
+        // Utility functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            checkConnection();
+            
+            // Allow Enter key to submit
+            document.getElementById('query').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    askQuestion();
+                }
+            });
+
+            document.getElementById('existing-query').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    askExistingQuestion();
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
