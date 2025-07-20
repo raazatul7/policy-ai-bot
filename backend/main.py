@@ -476,6 +476,13 @@ async def process_document(document_id: str):
     doc_info = uploaded_documents[document_id]
     file_path = DATA_DIR / doc_info['filename']
     
+    # Check if document is already processed
+    if doc_info.get('status') == 'processed':
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document is already processed. You can now ask questions about this document."
+        )
+    
     if not file_path.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -646,7 +653,10 @@ async def upload_and_ask(
 
 
 @app.post("/ask-existing")
-async def ask_existing_document(query: str = Form(...)):
+async def ask_existing_document(
+    query: str = Form(...),
+    document_id: str = Form(...)
+):
     """
     Ask a question about a previously uploaded document.
     
@@ -659,23 +669,64 @@ async def ask_existing_document(query: str = Form(...)):
             detail="Query cannot be empty"
         )
     
-    if not policy_system.retriever:
+    if not document_id.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No document has been processed. Please upload a document first using the /ask endpoint."
+            detail="Document ID is required"
+        )
+    
+    # Check if document exists
+    if document_id not in uploaded_documents:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+    
+    doc_info = uploaded_documents[document_id]
+    
+    # Check if document is processed
+    if doc_info.get('status') != 'processed':
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document is not processed. Please process the document first using the /process endpoint."
+        )
+    
+    file_path = DATA_DIR / doc_info['filename']
+    
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document file not found"
         )
     
     try:
+        # Load the document into the policy system
+        processing_result = policy_system.process_document(str(file_path), doc_info['original_filename'])
+        
+        if processing_result['status'] != 'success':
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error loading document: {processing_result['message']}"
+            )
+        
+        # Answer the query
         answer = policy_system.answer_query(query)
         
         response = {
             **answer,
-            "document_info": policy_system.document_metadata,
+            "document_info": {
+                "filename": doc_info['original_filename'],
+                "file_type": doc_info['file_type'],
+                "processed_chunks": doc_info.get('chunks', 0),
+                "document_id": document_id
+            },
             "query": query
         }
         
         return JSONResponse(content=response)
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

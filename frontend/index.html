@@ -371,6 +371,93 @@
             margin-bottom: 20px;
         }
 
+        /* Notification System Styles */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
+
+        .notification {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom: 10px;
+            padding: 16px 20px;
+            border-left: 4px solid;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-left-color: #28a745;
+        }
+
+        .notification.error {
+            border-left-color: #dc3545;
+        }
+
+        .notification.warning {
+            border-left-color: #ffc107;
+        }
+
+        .notification.info {
+            border-left-color: #17a2b8;
+        }
+
+        .notification-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        .notification-message {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notification-close:hover {
+            color: #333;
+        }
+
+        /* Auto-hide animation */
+        .notification.hide {
+            transform: translateX(100%);
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -397,10 +484,19 @@
             .documents-grid {
                 grid-template-columns: 1fr;
             }
+            .notification-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Notification Container -->
+    <div class="notification-container" id="notification-container"></div>
+
     <div class="container">
         <div class="header">
             <h1>🧠 AI Policy Query System</h1>
@@ -414,9 +510,9 @@
             </div>
 
             <div class="tabs">
-                <button class="tab active" onclick="showTab('upload')">📄 Upload & Ask</button>
-                <button class="tab" onclick="showTab('documents')">📁 My Documents</button>
-                <button class="tab" onclick="showTab('ask-existing')">❓ Ask Existing</button>
+                <button class="tab active">📄 Upload & Ask</button>
+                <button class="tab">📁 My Documents</button>
+                <button class="tab">❓ Ask Existing</button>
             </div>
 
             <!-- Upload & Ask Tab -->
@@ -491,9 +587,16 @@
 
             <!-- Ask Existing Tab -->
             <div id="ask-existing-tab" class="tab-content">
+                <div id="document-selection-info" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea;">
+                    <h4 style="margin-bottom: 10px; color: #333;">📄 Selected Document</h4>
+                    <p id="selected-document-info" style="color: #666; margin: 0;">
+                        No document selected. Please go to the "My Documents" tab and click "Ask Question" on a processed document.
+                    </p>
+                </div>
+
                 <div class="form-group">
-                    <label for="existing-query">❓ Ask Question About Processed Document</label>
-                    <textarea id="existing-query" class="query-input" rows="3" placeholder="Ask a question about the currently processed document..." required></textarea>
+                    <label for="existing-query">❓ Ask Question About Selected Document</label>
+                    <textarea id="existing-query" class="query-input" rows="3" placeholder="Ask a question about the selected document..." required></textarea>
                 </div>
 
                 <button id="askExistingBtn" class="btn btn-primary" onclick="askExistingQuestion()">
@@ -513,9 +616,23 @@
     <script>
         const API_BASE_URL = 'http://localhost:8000';
         let currentDocumentId = null;
+        let uploadedDocuments = {}; // Store documents from backend
 
-        // Tab management
-        function showTab(tabName) {
+        // URL Routing for tabs
+        function updateURL(tabName) {
+            const newURL = window.location.pathname + '#' + tabName;
+            window.history.pushState({ tab: tabName }, '', newURL);
+        }
+
+        function getCurrentTabFromURL() {
+            const hash = window.location.hash.substring(1);
+            return hash || 'documents'; // Default to 'documents' tab to show documents list
+        }
+
+        // Enhanced tab management with URL routing
+        async function showTab(tabName, updateHistory = true) {
+            console.log('showTab called with:', tabName, 'updateHistory:', updateHistory);
+            
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
@@ -525,13 +642,117 @@
             });
 
             // Show selected tab
-            document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
-
-            // Load documents if documents tab
-            if (tabName === 'documents') {
-                loadDocuments();
+            const targetTab = document.getElementById(tabName + '-tab');
+            if (targetTab) {
+                targetTab.classList.add('active');
+                console.log('Activated tab:', tabName + '-tab');
+            } else {
+                console.error('Tab not found:', tabName + '-tab');
             }
+
+            // Update active tab button
+            const tabButtons = document.querySelectorAll('.tab');
+            tabButtons.forEach((button, index) => {
+                const tabNames = ['upload', 'documents', 'ask-existing'];
+                if (tabNames[index] === tabName) {
+                    button.classList.add('active');
+                }
+            });
+
+            // Update URL if needed
+            if (updateHistory) {
+                updateURL(tabName);
+            }
+
+            // Load documents if documents tab - always refresh to get latest data
+            if (tabName === 'documents') {
+                console.log('Loading documents for documents tab...');
+                
+                // Force refresh with multiple approaches
+                try {
+                    // Approach 1: Direct API call and manual DOM update
+                    const refreshResponse = await fetch(`${API_BASE_URL}/documents`);
+                    if (refreshResponse.ok) {
+                        const data = await refreshResponse.json();
+                        console.log('Fresh documents data for tab switch:', data.documents.length, 'documents');
+                        
+                        // Update global cache
+                        uploadedDocuments = data.documents.reduce((acc, doc) => {
+                            acc[doc.id] = doc;
+                            return acc;
+                        }, {});
+                        
+                        // Manually update the DOM
+                        const container = document.getElementById('documents-container');
+                        if (container) {
+                            if (data.documents.length === 0) {
+                                container.innerHTML = `
+                                    <div class="empty-state">
+                                        <h3>📁 No Documents Yet</h3>
+                                        <p>Upload your first policy document to get started!</p>
+                                        <button class="btn btn-primary" onclick="showTab('upload')">📄 Upload Document</button>
+                                    </div>
+                                `;
+                            } else {
+                                container.innerHTML = data.documents.map(doc => `
+                                    <div class="document-card">
+                                        <h3>${doc.original_filename}</h3>
+                                        <div class="document-info">
+                                            <p><strong>Type:</strong> ${doc.file_type}</p>
+                                            <p><strong>Size:</strong> ${formatFileSize(doc.file_size)}</p>
+                                            <p><strong>Uploaded:</strong> ${formatDate(doc.upload_date)}</p>
+                                            <p><strong>Status:</strong> 
+                                                <span class="status-badge status-${doc.status}">${doc.status}</span>
+                                            </p>
+                                            ${doc.chunks ? `<p><strong>Chunks:</strong> ${doc.chunks}</p>` : ''}
+                                        </div>
+                                        <div class="document-actions">
+                                            ${doc.status === 'uploaded' ? 
+                                                `<button class="btn btn-success" onclick="processDocument('${doc.id}')">⚙️ Process</button>` : 
+                                                `<button class="btn btn-primary" onclick="askAboutDocument('${doc.id}')">❓ Ask Question</button>`
+                                            }
+                                            <button class="btn btn-danger" onclick="deleteDocument('${doc.id}')">🗑️ Delete</button>
+                                        </div>
+                                    </div>
+                                `).join('');
+                            }
+                            
+                            // Force DOM update
+                            container.style.display = 'none';
+                            container.offsetHeight; // Trigger reflow
+                            container.style.display = 'block';
+                            
+                            console.log('DOM updated successfully for tab switch with', data.documents.length, 'documents');
+                        }
+                    }
+                    
+                    // Approach 2: Also call loadDocuments as backup
+                    loadDocuments(true);
+                    
+                } catch (refreshError) {
+                    console.error('Error refreshing documents for tab switch:', refreshError);
+                    // Fallback to loadDocuments
+                    loadDocuments(true);
+                }
+            }
+        }
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', function(event) {
+            const currentTab = getCurrentTabFromURL();
+            showTab(currentTab, false).catch(console.error); // Don't update history when handling popstate
+        });
+
+        // Update tab button click handlers to include proper tab names
+        function initializeTabButtons() {
+            const tabButtons = document.querySelectorAll('.tab');
+            const tabNames = ['upload', 'documents', 'ask-existing'];
+            
+            tabButtons.forEach((button, index) => {
+                button.addEventListener('click', function() {
+                    showTab(tabNames[index]).catch(console.error);
+                });
+            });
         }
 
         // Check connection status
@@ -551,9 +772,15 @@
         }
 
         // Load documents
-        async function loadDocuments() {
+        async function loadDocuments(silent = false) {
+            console.log('Loading documents, silent mode:', silent);
             const container = document.getElementById('documents-container');
             const loading = document.getElementById('documents-loading');
+            
+            if (!container) {
+                console.error('Documents container not found!');
+                return;
+            }
             
             loading.style.display = 'block';
             container.innerHTML = '';
@@ -565,8 +792,16 @@
                 }
 
                 const data = await response.json();
+                console.log('Documents data received:', data.documents.length, 'documents');
+                
+                // Store documents globally
+                uploadedDocuments = data.documents.reduce((acc, doc) => {
+                    acc[doc.id] = doc;
+                    return acc;
+                }, {});
                 
                 if (data.documents.length === 0) {
+                    console.log('No documents found, showing empty state');
                     container.innerHTML = `
                         <div class="empty-state">
                             <h3>📁 No Documents Yet</h3>
@@ -575,6 +810,7 @@
                         </div>
                     `;
                 } else {
+                    console.log('Rendering', data.documents.length, 'documents');
                     container.innerHTML = data.documents.map(doc => `
                         <div class="document-card">
                             <h3>${doc.original_filename}</h3>
@@ -597,6 +833,12 @@
                         </div>
                     `).join('');
                 }
+                
+                // Force a DOM update
+                container.style.display = 'none';
+                container.offsetHeight; // Trigger reflow
+                container.style.display = 'block';
+                
             } catch (error) {
                 container.innerHTML = `
                     <div class="error">
@@ -604,6 +846,11 @@
                         <p>${error.message}</p>
                     </div>
                 `;
+                
+                // Only show notification if not in silent mode
+                if (!silent) {
+                    showNotification('error', 'Load Failed', `Error loading documents: ${error.message}`);
+                }
             } finally {
                 loading.style.display = 'none';
             }
@@ -617,14 +864,15 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
                 }
 
                 const result = await response.json();
-                showSuccess(`Document processed successfully! ${result.document_info.chunks} chunks created.`);
+                showNotification('success', 'Document Processed', `Document processed successfully! ${result.document_info.chunks} chunks created.`);
                 loadDocuments(); // Refresh the list
             } catch (error) {
-                showError(`Error processing document: ${error.message}`);
+                showNotification('error', 'Processing Failed', `Error processing document: ${error.message}`);
             }
         }
 
@@ -634,26 +882,154 @@
                 return;
             }
 
+            console.log('Deleting document:', documentId);
+
             try {
                 const response = await fetch(`${API_BASE_URL}/documents/${documentId}`, {
                     method: 'DELETE'
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
                 }
 
-                showSuccess('Document deleted successfully!');
-                loadDocuments(); // Refresh the list
+                console.log('Document deleted successfully from backend');
+                showNotification('success', 'Document Deleted', 'Document deleted successfully!');
+                
+                // Remove the document from the global cache
+                if (uploadedDocuments[documentId]) {
+                    delete uploadedDocuments[documentId];
+                    console.log('Removed document from cache:', documentId);
+                }
+                
+                // Force refresh the documents list with multiple approaches
+                try {
+                    console.log('Refreshing documents list...');
+                    
+                    // Approach 1: Direct API call and manual DOM update
+                    const refreshResponse = await fetch(`${API_BASE_URL}/documents`);
+                    if (refreshResponse.ok) {
+                        const data = await refreshResponse.json();
+                        console.log('Fresh documents data received:', data.documents.length, 'documents');
+                        
+                        // Update global cache
+                        uploadedDocuments = data.documents.reduce((acc, doc) => {
+                            acc[doc.id] = doc;
+                            return acc;
+                        }, {});
+                        
+                        // Manually update the DOM
+                        const container = document.getElementById('documents-container');
+                        if (container) {
+                            if (data.documents.length === 0) {
+                                container.innerHTML = `
+                                    <div class="empty-state">
+                                        <h3>📁 No Documents Yet</h3>
+                                        <p>Upload your first policy document to get started!</p>
+                                        <button class="btn btn-primary" onclick="showTab('upload')">📄 Upload Document</button>
+                                    </div>
+                                `;
+                            } else {
+                                container.innerHTML = data.documents.map(doc => `
+                                    <div class="document-card">
+                                        <h3>${doc.original_filename}</h3>
+                                        <div class="document-info">
+                                            <p><strong>Type:</strong> ${doc.file_type}</p>
+                                            <p><strong>Size:</strong> ${formatFileSize(doc.file_size)}</p>
+                                            <p><strong>Uploaded:</strong> ${formatDate(doc.upload_date)}</p>
+                                            <p><strong>Status:</strong> 
+                                                <span class="status-badge status-${doc.status}">${doc.status}</span>
+                                            </p>
+                                            ${doc.chunks ? `<p><strong>Chunks:</strong> ${doc.chunks}</p>` : ''}
+                                        </div>
+                                        <div class="document-actions">
+                                            ${doc.status === 'uploaded' ? 
+                                                `<button class="btn btn-success" onclick="processDocument('${doc.id}')">⚙️ Process</button>` : 
+                                                `<button class="btn btn-primary" onclick="askAboutDocument('${doc.id}')">❓ Ask Question</button>`
+                                            }
+                                            <button class="btn btn-danger" onclick="deleteDocument('${doc.id}')">🗑️ Delete</button>
+                                        </div>
+                                    </div>
+                                `).join('');
+                            }
+                            
+                            // Force DOM update with multiple techniques
+                            container.style.display = 'none';
+                            container.offsetHeight; // Trigger reflow
+                            container.style.display = 'block';
+                            
+                            // Additional force update
+                            setTimeout(() => {
+                                container.style.display = 'none';
+                                container.offsetHeight;
+                                container.style.display = 'block';
+                                console.log('Additional DOM force update completed');
+                            }, 50);
+                            
+                            console.log('DOM updated successfully with', data.documents.length, 'documents');
+                        }
+                    }
+                    
+                    // Approach 2: Also call loadDocuments as backup
+                    await loadDocuments(true);
+                    
+                    console.log('Documents list refreshed successfully');
+                    
+                    // Approach 3: Final verification - if still showing old data, force refresh
+                    setTimeout(() => {
+                        const currentDocCount = document.querySelectorAll('.document-card').length;
+                        const expectedDocCount = Object.keys(uploadedDocuments).length;
+                        console.log('Verification: Current DOM shows', currentDocCount, 'documents, expected', expectedDocCount);
+                        
+                        if (currentDocCount !== expectedDocCount) {
+                            console.log('DOM mismatch detected, forcing page refresh...');
+                            window.location.reload();
+                        }
+                    }, 200);
+                    
+                } catch (refreshError) {
+                    console.error('Error refreshing documents list:', refreshError);
+                    // Don't show notification for refresh errors to avoid double notifications
+                }
             } catch (error) {
-                showError(`Error deleting document: ${error.message}`);
+                console.error('Error deleting document:', error);
+                showNotification('error', 'Delete Failed', `Error deleting document: ${error.message}`);
             }
         }
 
         // Ask about specific document
         function askAboutDocument(documentId) {
+            console.log('Selecting document:', documentId);
+            console.log('Available documents:', Object.keys(uploadedDocuments));
+            
             currentDocumentId = documentId;
             showTab('ask-existing');
+            
+            // Update the document selection info
+            const selectedDocInfo = document.getElementById('selected-document-info');
+            const selectedDoc = uploadedDocuments[documentId];
+            
+            console.log('Selected document:', selectedDoc);
+            
+            if (selectedDoc) {
+                selectedDocInfo.innerHTML = `
+                    <strong>${selectedDoc.original_filename}</strong><br>
+                    <small>Type: ${selectedDoc.file_type} | Size: ${formatFileSize(selectedDoc.file_size)} | Status: ${selectedDoc.status}</small>
+                `;
+            }
+            
+            // Show success message that document is selected
+            const resultDiv = document.getElementById('existing-result');
+            resultDiv.innerHTML = `
+                <h3>✅ Document Selected</h3>
+                <p>You can now ask questions about <strong>${selectedDoc ? selectedDoc.original_filename : 'this document'}</strong>. Type your question below and click "Ask AI".</p>
+            `;
+            resultDiv.className = 'result success';
+            resultDiv.style.display = 'block';
+            
+            // Clear any previous query
+            document.getElementById('existing-query').value = '';
         }
 
         // Set example question
@@ -672,12 +1048,12 @@
 
             // Validate inputs
             if (!documentFile) {
-                showError('Please select a policy document to upload.');
+                showNotification('error', 'Missing Document', 'Please select a policy document to upload.');
                 return;
             }
 
             if (!query) {
-                showError('Please enter a question about your policy.');
+                showNotification('error', 'Missing Question', 'Please enter a question about your policy.');
                 return;
             }
 
@@ -705,10 +1081,81 @@
                 const result = await response.json();
                 showResult(result);
                 currentDocumentId = result.document_id;
+                
+                // Show success notification for upload and processing
+                showNotification('success', 'Document Processed', `Document "${result.document_info.filename}" uploaded and processed successfully!`);
+                
+                // Force refresh the documents list with multiple approaches
+                console.log('Refreshing documents list after upload...');
+                try {
+                    // Approach 1: Direct API call and manual DOM update
+                    const refreshResponse = await fetch(`${API_BASE_URL}/documents`);
+                    if (refreshResponse.ok) {
+                        const data = await refreshResponse.json();
+                        console.log('Fresh documents data after upload:', data.documents.length, 'documents');
+                        
+                        // Update global cache
+                        uploadedDocuments = data.documents.reduce((acc, doc) => {
+                            acc[doc.id] = doc;
+                            return acc;
+                        }, {});
+                        
+                        // Manually update the DOM if we're on documents tab
+                        const container = document.getElementById('documents-container');
+                        if (container) {
+                            if (data.documents.length === 0) {
+                                container.innerHTML = `
+                                    <div class="empty-state">
+                                        <h3>📁 No Documents Yet</h3>
+                                        <p>Upload your first policy document to get started!</p>
+                                        <button class="btn btn-primary" onclick="showTab('upload')">📄 Upload Document</button>
+                                    </div>
+                                `;
+                            } else {
+                                container.innerHTML = data.documents.map(doc => `
+                                    <div class="document-card">
+                                        <h3>${doc.original_filename}</h3>
+                                        <div class="document-info">
+                                            <p><strong>Type:</strong> ${doc.file_type}</p>
+                                            <p><strong>Size:</strong> ${formatFileSize(doc.file_size)}</p>
+                                            <p><strong>Uploaded:</strong> ${formatDate(doc.upload_date)}</p>
+                                            <p><strong>Status:</strong> 
+                                                <span class="status-badge status-${doc.status}">${doc.status}</span>
+                                            </p>
+                                            ${doc.chunks ? `<p><strong>Chunks:</strong> ${doc.chunks}</p>` : ''}
+                                        </div>
+                                        <div class="document-actions">
+                                            ${doc.status === 'uploaded' ? 
+                                                `<button class="btn btn-success" onclick="processDocument('${doc.id}')">⚙️ Process</button>` : 
+                                                `<button class="btn btn-primary" onclick="askAboutDocument('${doc.id}')">❓ Ask Question</button>`
+                                            }
+                                            <button class="btn btn-danger" onclick="deleteDocument('${doc.id}')">🗑️ Delete</button>
+                                        </div>
+                                    </div>
+                                `).join('');
+                            }
+                            
+                            // Force DOM update
+                            container.style.display = 'none';
+                            container.offsetHeight; // Trigger reflow
+                            container.style.display = 'block';
+                            
+                            console.log('DOM updated successfully after upload with', data.documents.length, 'documents');
+                        }
+                    }
+                    
+                    // Approach 2: Also call loadDocuments as backup
+                    await loadDocuments(true);
+                    
+                    console.log('Documents list refreshed successfully after upload');
+                    
+                } catch (refreshError) {
+                    console.error('Error refreshing documents list after upload:', refreshError);
+                }
 
             } catch (error) {
                 console.error('Error:', error);
-                showError(`Error: ${error.message}. Please make sure the server is running and try again.`);
+                showNotification('error', 'Query Failed', `Error: ${error.message}. Please make sure the server is running and try again.`);
             } finally {
                 // Hide loading
                 document.getElementById('loading').style.display = 'none';
@@ -721,12 +1168,12 @@
             const query = document.getElementById('existing-query').value.trim();
 
             if (!query) {
-                showError('Please enter a question.');
+                showNotification('error', 'Missing Question', 'Please enter a question.');
                 return;
             }
 
             if (!currentDocumentId) {
-                showError('No document is currently processed. Please upload and process a document first.');
+                showNotification('error', 'No Document Selected', 'Please select a document from the Documents tab first.');
                 return;
             }
 
@@ -738,6 +1185,7 @@
             try {
                 const formData = new FormData();
                 formData.append('query', query);
+                formData.append('document_id', currentDocumentId);
 
                 const response = await fetch(`${API_BASE_URL}/ask-existing`, {
                     method: 'POST',
@@ -745,7 +1193,8 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
                 }
 
                 const result = await response.json();
@@ -753,7 +1202,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                showExistingError(`Error: ${error.message}`);
+                showNotification('error', 'Query Failed', `Error: ${error.message}`);
             } finally {
                 // Hide loading
                 document.getElementById('existing-loading').style.display = 'none';
@@ -889,9 +1338,68 @@
             return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
         }
 
-        // Initialize
+        // Notification System Functions
+        function showNotification(type, title, message, duration = 5000) {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            notification.innerHTML = `
+                <div class="notification-icon">${icons[type] || 'ℹ️'}</div>
+                <div class="notification-content">
+                    <div class="notification-title">${title}</div>
+                    <div class="notification-message">${message}</div>
+                </div>
+                <button class="notification-close" onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Show notification with animation
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            // Auto-hide after duration
+            if (duration > 0) {
+                setTimeout(() => {
+                    notification.classList.add('hide');
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.remove();
+                        }
+                    }, 300);
+                }, duration);
+            }
+        }
+
+        // Enhanced initialization with URL routing
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded - Initializing application...');
             checkConnection();
+            
+            // Initialize tab button event listeners
+            initializeTabButtons();
+            
+            // Load the correct tab based on URL
+            const initialTab = getCurrentTabFromURL();
+            console.log('Initial tab from URL:', initialTab);
+            showTab(initialTab, false).catch(console.error); // Don't update history on initial load
+            
+            // Ensure documents are loaded if we're on documents tab
+            if (initialTab === 'documents') {
+                console.log('Ensuring documents are loaded on initial load...');
+                setTimeout(() => {
+                    loadDocuments();
+                }, 100);
+            }
             
             // Allow Enter key to submit
             document.getElementById('query').addEventListener('keypress', function(e) {
